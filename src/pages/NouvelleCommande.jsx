@@ -130,7 +130,7 @@ export default function NouvelleCommande() {
                   value={nomClient}
                   onChange={(e) => setNomClient(e.target.value)}
                   className="w-full pl-10 border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                  placeholder="Ex: Jean Dupont"
+                  placeholder="Nom complet"
                 />
               </div>
             </div>
