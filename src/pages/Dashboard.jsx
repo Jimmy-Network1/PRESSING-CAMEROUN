@@ -1,20 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getAllCommandes } from '../db/indexedDB';
-import { ShoppingCart, Droplets, Banknote, CalendarClock, TrendingUp, ChevronRight, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { getAllCommandes, getAllDepenses } from '../db/indexedDB';
+import { ShoppingCart, Droplets, Banknote, CalendarClock, TrendingUp, ChevronRight, CheckCircle2, Clock, XCircle, TrendingDown, Scale } from 'lucide-react';
 
 export default function Dashboard() {
   const [commandes, setCommandes] = useState([]);
+  const [depenses, setDepenses] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    chargerCommandes();
+    chargerDonnees();
   }, []);
 
-  const chargerCommandes = async () => {
-    const data = await getAllCommandes();
-    data.sort((a, b) => new Date(b.dateCreation) - new Date(a.dateCreation));
-    setCommandes(data);
+  const chargerDonnees = async () => {
+    setLoading(true);
+    const dataCommandes = await getAllCommandes();
+    const dataDepenses = await getAllDepenses();
+    
+    dataCommandes.sort((a, b) => new Date(b.dateCreation) - new Date(a.dateCreation));
+    setCommandes(dataCommandes);
+    setDepenses(dataDepenses);
     setLoading(false);
   };
 
@@ -41,6 +46,10 @@ export default function Dashboard() {
   const caDuMois = commandes.filter(c => c.dateDepot?.startsWith(currentMonth)).reduce((acc, c) => acc + c.montantTotal, 0);
   const caTotal = commandes.reduce((acc, c) => acc + c.montantTotal, 0);
 
+  // Dépenses & Bénéfice (Global)
+  const totalDepenses = depenses.reduce((acc, d) => acc + d.montant, 0);
+  const beneficeNet = caTotal - totalDepenses;
+
   // Graphique
   const daysLabels = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
   const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -60,7 +69,7 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">Vue d'ensemble</h1>
-          <p className="text-slate-500 mt-1 text-sm">Gérez votre activité et suivez vos performances.</p>
+          <p className="text-slate-500 mt-1 text-sm">Gérez votre activité et suivez vos performances financières.</p>
         </div>
       </div>
 
@@ -119,24 +128,24 @@ export default function Dashboard() {
         {/* Colonne Principale: CA & Graphique */}
         <div className="lg:col-span-2 space-y-8">
           
-          {/* Chiffre d'affaires */}
+          {/* Chiffre d'affaires & Bénéfice */}
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
             <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-4">
-              <TrendingUp className="text-green-600" size={20} />
-              <h2 className="text-lg font-bold text-slate-800">Chiffre d'Affaires</h2>
+              <Scale className="text-slate-600" size={20} />
+              <h2 className="text-lg font-bold text-slate-800">Bilan Financier Global</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 rounded-lg border border-slate-100 bg-slate-50">
-                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Aujourd'hui</p>
-                <p className="text-xl font-bold text-green-700">{caDuJour.toLocaleString('fr-FR')} FCFA</p>
+              <div className="p-4 rounded-lg border border-slate-100 bg-green-50">
+                <p className="text-xs text-green-700 font-bold uppercase tracking-wider mb-1 flex items-center gap-1"><TrendingUp size={14}/> Total Entrées (CA)</p>
+                <p className="text-xl font-black text-green-800">{caTotal.toLocaleString('fr-FR')} FCFA</p>
               </div>
-              <div className="p-4 rounded-lg border border-slate-100 bg-slate-50">
-                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Mois en cours</p>
-                <p className="text-xl font-bold text-green-700">{caDuMois.toLocaleString('fr-FR')} FCFA</p>
+              <div className="p-4 rounded-lg border border-slate-100 bg-red-50">
+                <p className="text-xs text-red-700 font-bold uppercase tracking-wider mb-1 flex items-center gap-1"><TrendingDown size={14}/> Total Charges</p>
+                <p className="text-xl font-black text-red-800">- {totalDepenses.toLocaleString('fr-FR')} FCFA</p>
               </div>
-              <div className="p-4 rounded-lg border border-slate-100 bg-slate-50">
-                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Total Global</p>
-                <p className="text-xl font-bold text-green-700">{caTotal.toLocaleString('fr-FR')} FCFA</p>
+              <div className="p-4 rounded-lg border border-slate-100 bg-blue-50">
+                <p className="text-xs text-blue-700 font-bold uppercase tracking-wider mb-1 flex items-center gap-1"><Scale size={14}/> Bénéfice Net</p>
+                <p className="text-xl font-black text-blue-800">{beneficeNet.toLocaleString('fr-FR')} FCFA</p>
               </div>
             </div>
           </div>

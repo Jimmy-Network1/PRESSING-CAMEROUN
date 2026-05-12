@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Phone, MapPin, Calendar, Trash2, Inbox, CheckCircle2, Clock, XCircle, Filter, Banknote } from 'lucide-react';
+import { Phone, MapPin, Calendar, Trash2, Inbox, CheckCircle2, Clock, XCircle, Filter, Banknote, Search } from 'lucide-react';
 import { getAllCommandes, updateCommande, deleteCommande } from '../db/indexedDB';
 
-export default function Commandes() {
+export default function Commandes({ user }) {
   const [commandes, setCommandes] = useState([]);
   const [filtre, setFiltre] = useState('Toutes');
+  const [recherche, setRecherche] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -54,10 +55,21 @@ export default function Commandes() {
   const today = new Date().toISOString().split('T')[0];
 
   const commandesFiltrees = commandes.filter(c => {
-    if (filtre === 'Non lavées') return c.statutLavage === 'non_lave';
-    if (filtre === 'Non payées') return c.statutPaiement === 'non_paye';
-    if (filtre === 'À livrer aujourd\'hui') return c.dateLivraison === today;
-    return true; // 'Toutes'
+    // Filtre par statut/date
+    let passFilter = true;
+    if (filtre === 'Non lavées') passFilter = c.statutLavage === 'non_lave';
+    else if (filtre === 'Non payées') passFilter = c.statutPaiement === 'non_paye';
+    else if (filtre === 'À livrer aujourd\'hui') passFilter = c.dateLivraison === today;
+
+    // Filtre par recherche (nom ou tel)
+    let passSearch = true;
+    if (recherche) {
+      const searchLower = recherche.toLowerCase();
+      passSearch = (c.nomClient?.toLowerCase().includes(searchLower)) || 
+                   (c.telephone?.includes(recherche));
+    }
+
+    return passFilter && passSearch;
   });
 
   const filtresOptions = ['Toutes', 'Non lavées', 'Non payées', 'À livrer aujourd\'hui'];
@@ -71,18 +83,30 @@ export default function Commandes() {
         </div>
       </div>
 
-      {/* Filtres */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6">
-        <div className="flex items-center gap-2 mb-3 sm:hidden">
-          <Filter size={18} className="text-slate-500" />
-          <span className="text-sm font-medium text-slate-700">Filtres</span>
+      {/* Barre de recherche et Filtres */}
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
+        
+        {/* Recherche */}
+        <div className="relative w-full md:w-1/3">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search size={18} className="text-slate-400" />
+          </div>
+          <input 
+            type="text" 
+            value={recherche}
+            onChange={(e) => setRecherche(e.target.value)}
+            placeholder="Rechercher (nom ou téléphone)..."
+            className="w-full pl-10 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+          />
         </div>
-        <div className="flex flex-wrap gap-2">
+
+        {/* Filtres statuts */}
+        <div className="flex flex-wrap gap-2 w-full md:w-auto">
           {filtresOptions.map(f => (
             <button
               key={f}
               onClick={() => setFiltre(f)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
                 filtre === f 
                   ? 'bg-slate-800 text-white border-slate-800 shadow-md' 
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
@@ -106,7 +130,7 @@ export default function Commandes() {
             <Inbox size={48} className="text-slate-300" />
           </div>
           <h3 className="text-lg font-bold text-slate-800 mb-1">Aucune commande trouvée</h3>
-          <p className="text-slate-500 text-sm">Il n'y a aucune commande correspondant à vos critères.</p>
+          <p className="text-slate-500 text-sm">Essayez de modifier votre recherche ou vos filtres.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -180,7 +204,8 @@ export default function Commandes() {
               </div>
 
               {/* Actions */}
-              <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-wrap gap-2 justify-end">
+              <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-wrap gap-2 justify-end items-center">
+                
                 {commande.statutLavage === 'non_lave' && (
                   <button 
                     onClick={() => handleUpdateLavage(commande.id)}
@@ -197,13 +222,17 @@ export default function Commandes() {
                     <Banknote size={14} /> Payer
                   </button>
                 )}
-                <button 
-                  onClick={() => handleDelete(commande.id)}
-                  className="flex justify-center items-center text-slate-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-md transition-colors border border-transparent hover:border-red-100"
-                  title="Supprimer"
-                >
-                  <Trash2 size={16} />
-                </button>
+                
+                {/* Seul le patron peut supprimer */}
+                {user?.role === 'patron' && (
+                  <button 
+                    onClick={() => handleDelete(commande.id)}
+                    className="flex justify-center items-center text-slate-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-md transition-colors border border-transparent hover:border-red-100 ml-auto"
+                    title="Supprimer la commande"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
               </div>
             </div>
           ))}
