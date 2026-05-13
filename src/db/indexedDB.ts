@@ -1,9 +1,10 @@
-import { openDB as idbOpen } from 'idb';
+import { openDB as idbOpen, IDBPDatabase } from 'idb';
+import { Commande, Utilisateur, Depense } from '../types';
 
 const DB_NAME = 'pressingDB';
 const DB_VERSION = 2; // Mise à jour de la version pour ajouter les nouvelles tables
 
-export const openDB = async () => {
+export const openDB = async (): Promise<IDBPDatabase> => {
   try {
     return await idbOpen(DB_NAME, DB_VERSION, {
       upgrade(db, oldVersion) {
@@ -37,7 +38,7 @@ export const openDB = async () => {
 // 🔐 GESTION DES UTILISATEURS (AUTH)
 // ==========================================
 
-export const initDefaultUsers = async () => {
+export const initDefaultUsers = async (): Promise<void> => {
   const db = await openDB();
   const patron = await db.get('utilisateurs', 'admin');
   
@@ -47,12 +48,12 @@ export const initDefaultUsers = async () => {
   }
 };
 
-export const loginUser = async (username, password) => {
+export const loginUser = async (username: string, password?: string): Promise<Utilisateur> => {
   const db = await openDB();
   const user = await db.get('utilisateurs', username);
   if (user && user.password === password) {
     const { password, ...safeUser } = user;
-    return safeUser;
+    return safeUser as Utilisateur;
   }
   throw new Error('Identifiants incorrects');
 };
@@ -62,29 +63,29 @@ export const loginUser = async (username, password) => {
 // 🧺 GESTION DES COMMANDES
 // ==========================================
 
-export const addCommande = async (commande) => {
+export const addCommande = async (commande: Commande): Promise<number> => {
   try {
     const db = await openDB();
     commande.dateCreation = new Date().toISOString();
-    return await db.add('commandes', commande);
+    return (await db.add('commandes', commande)) as number;
   } catch (error) { throw error; }
 };
 
-export const getAllCommandes = async () => {
+export const getAllCommandes = async (): Promise<Commande[]> => {
   try {
     const db = await openDB();
     return await db.getAll('commandes');
   } catch (error) { return []; }
 };
 
-export const getCommandeById = async (id) => {
+export const getCommandeById = async (id: number): Promise<Commande | null> => {
   try {
     const db = await openDB();
     return await db.get('commandes', id);
   } catch (error) { return null; }
 };
 
-export const updateCommande = async (id, changes) => {
+export const updateCommande = async (id: number, changes: Partial<Commande>): Promise<Commande> => {
   try {
     const db = await openDB();
     const commande = await db.get('commandes', id);
@@ -95,23 +96,23 @@ export const updateCommande = async (id, changes) => {
   } catch (error) { throw error; }
 };
 
-export const deleteCommande = async (id) => {
+export const deleteCommande = async (id: number): Promise<void> => {
   try {
     const db = await openDB();
     await db.delete('commandes', id);
   } catch (error) { throw error; }
 };
 
-export const getCommandesDuJour = async () => {
+export const getCommandesDuJour = async (): Promise<Commande[]> => {
   try {
     const db = await openDB();
     const today = new Date().toISOString().split('T')[0];
-    const toutesCommandes = await db.getAll('commandes');
+    const toutesCommandes: Commande[] = await db.getAll('commandes');
     return toutesCommandes.filter(c => c.dateDepot && c.dateDepot.startsWith(today));
   } catch (error) { return []; }
 };
 
-export const getCommandesNonPayees = async () => {
+export const getCommandesNonPayees = async (): Promise<Commande[]> => {
   try {
     const db = await openDB();
     return await db.getAllFromIndex('commandes', 'statutPaiement', 'non_paye');
@@ -122,22 +123,22 @@ export const getCommandesNonPayees = async () => {
 // 💸 GESTION DES DÉPENSES
 // ==========================================
 
-export const addDepense = async (depense) => {
+export const addDepense = async (depense: Depense): Promise<number> => {
   try {
     const db = await openDB();
     depense.dateCreation = new Date().toISOString();
-    return await db.add('depenses', depense);
+    return (await db.add('depenses', depense)) as number;
   } catch (error) { throw error; }
 };
 
-export const getAllDepenses = async () => {
+export const getAllDepenses = async (): Promise<Depense[]> => {
   try {
     const db = await openDB();
     return await db.getAll('depenses');
   } catch (error) { return []; }
 };
 
-export const deleteDepense = async (id) => {
+export const deleteDepense = async (id: number): Promise<void> => {
   try {
     const db = await openDB();
     await db.delete('depenses', id);

@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addCommande } from '../db/indexedDB';
-import { User, MapPin, Phone, Calendar, Banknote, Shirt, PlusCircle, Trash2, CheckCircle2, ChevronRight } from 'lucide-react';
+import { User, MapPin, Phone, Calendar, Shirt, PlusCircle, Trash2, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Article, Commande } from '../types';
 
 const QUARTIERS = [
   'Bastos', 'Melen', 'Mvog-Mbi', 'Essos', 'Nkoldongo',
@@ -28,7 +29,7 @@ export default function NouvelleCommande() {
   const [dateLivraison, setDateLivraison] = useState('');
   const [modePaiement, setModePaiement] = useState(MODES_PAIEMENT[0]);
   
-  const [articles, setArticles] = useState([
+  const [articles, setArticles] = useState<Article[]>([
     { id: Date.now(), nom: ARTICLES_TYPES[0], quantite: 1, prixUnitaire: 0 }
   ]);
 
@@ -43,13 +44,13 @@ export default function NouvelleCommande() {
     ]);
   };
 
-  const handleRemoveArticle = (id) => {
+  const handleRemoveArticle = (id: number | undefined) => {
     if (articles.length > 1) {
       setArticles(articles.filter(a => a.id !== id));
     }
   };
 
-  const handleArticleChange = (id, field, value) => {
+  const handleArticleChange = (id: number | undefined, field: string, value: any) => {
     setArticles(articles.map(a => {
       if (a.id === id) {
         const newArticle = { ...a, [field]: value };
@@ -59,7 +60,7 @@ export default function NouvelleCommande() {
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (articles.length === 0) return;
 
@@ -70,7 +71,7 @@ export default function NouvelleCommande() {
       sousTotal: Number(a.quantite) * Number(a.prixUnitaire)
     }));
 
-    const nouvelleCommande = {
+    const nouvelleCommande: Commande = {
       nomClient,
       telephone,
       quartier,
@@ -80,7 +81,8 @@ export default function NouvelleCommande() {
       articles: finalArticles,
       montantTotal,
       statutLavage: 'non_lave',
-      statutPaiement: 'non_paye'
+      statutPaiement: 'non_paye',
+      statutLivraison: 'en_attente'
     };
 
     try {
@@ -180,6 +182,7 @@ export default function NouvelleCommande() {
               <input 
                 type="date" 
                 required
+                min={today}
                 value={dateDepot}
                 onChange={(e) => setDateDepot(e.target.value)}
                 className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all"
@@ -190,6 +193,7 @@ export default function NouvelleCommande() {
               <input 
                 type="date" 
                 required
+                min={dateDepot || today}
                 value={dateLivraison}
                 onChange={(e) => setDateLivraison(e.target.value)}
                 className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all"

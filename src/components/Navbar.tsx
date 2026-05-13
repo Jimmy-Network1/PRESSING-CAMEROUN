@@ -2,8 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Shirt, LayoutDashboard, ListOrdered, PlusCircle, Menu, X, LogOut, User as UserIcon, Wallet } from 'lucide-react';
 import { getCommandesNonPayees } from '../db/indexedDB';
+import { Utilisateur } from '../types';
 
-export default function Navbar({ user, onLogout }) {
+interface NavbarProps {
+  user: Utilisateur | null;
+  onLogout: () => void;
+}
+
+export default function Navbar({ user, onLogout }: NavbarProps) {
   const [nonPayeesCount, setNonPayeesCount] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();

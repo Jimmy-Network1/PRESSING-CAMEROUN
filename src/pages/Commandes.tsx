@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Phone, MapPin, Calendar, Trash2, Inbox, CheckCircle2, Clock, XCircle, Filter, Banknote, Search } from 'lucide-react';
+import { Phone, MapPin, Calendar, Trash2, Inbox, CheckCircle2, Clock, XCircle, Banknote, Search, PackageCheck, Printer } from 'lucide-react';
 import { getAllCommandes, updateCommande, deleteCommande } from '../db/indexedDB';
+import { Commande, Utilisateur } from '../types';
 
-export default function Commandes({ user }) {
-  const [commandes, setCommandes] = useState([]);
-  const [filtre, setFiltre] = useState('Toutes');
+interface CommandesProps {
+  user: Utilisateur | null;
+}
+
+export default function Commandes({ user }: CommandesProps) {
+  const [commandes, setCommandes] = useState<Commande[]>([]);
+  const [filtre, setFiltre] = useState('En boutique');
   const [recherche, setRecherche] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -15,12 +20,13 @@ export default function Commandes({ user }) {
   const chargerCommandes = async () => {
     setLoading(true);
     const data = await getAllCommandes();
-    data.sort((a, b) => new Date(b.dateCreation) - new Date(a.dateCreation));
+    data.sort((a, b) => new Date(b.dateCreation || '').getTime() - new Date(a.dateCreation || '').getTime());
     setCommandes(data);
     setLoading(false);
   };
 
-  const handleUpdateLavage = async (id) => {
+  const handleUpdateLavage = async (id: number | undefined) => {
+    if (!id) return;
     try {
       await updateCommande(id, { statutLavage: 'lave' });
       setCommandes(commandes.map(c => c.id === id ? { ...c, statutLavage: 'lave' } : c));
@@ -30,7 +36,8 @@ export default function Commandes({ user }) {
     }
   };
 
-  const handleUpdatePaiement = async (id) => {
+  const handleUpdatePaiement = async (id: number | undefined) => {
+    if (!id) return;
     try {
       await updateCommande(id, { statutPaiement: 'paye' });
       setCommandes(commandes.map(c => c.id === id ? { ...c, statutPaiement: 'paye' } : c));
@@ -40,7 +47,19 @@ export default function Commandes({ user }) {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleUpdateLivraison = async (id: number | undefined) => {
+    if (!id) return;
+    try {
+      await updateCommande(id, { statutLivraison: 'livre' });
+      setCommandes(commandes.map(c => c.id === id ? { ...c, statutLivraison: 'livre' } : c));
+    } catch (error) {
+      console.error(error);
+      alert('Erreur lors de la mise à jour.');
+    }
+  };
+
+  const handleDelete = async (id: number | undefined) => {
+    if (!id) return;
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cette commande ?')) {
       try {
         await deleteCommande(id);
@@ -52,27 +71,83 @@ export default function Commandes({ user }) {
     }
   };
 
+  const handlePrintTicket = (commande: Commande) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const dateStr = new Date(commande.dateDepot).toLocaleDateString('fr-FR');
+    const articlesHtml = commande.articles.map(a => 
+      `<tr>
+        <td style="padding: 5px 0;">${a.quantite}x ${a.nom}</td>
+        <td style="text-align: right;">${(a.quantite * a.prixUnitaire).toLocaleString('fr-FR')} FCFA</td>
+      </tr>`
+    ).join('');
+
+    const html = `
+      <html>
+        <head>
+          <title>Ticket de Caisse - Commande #${commande.id}</title>
+          <style>
+            body { font-family: 'Courier New', Courier, monospace; font-size: 12px; padding: 20px; width: 300px; margin: 0 auto; color: #000; }
+            h1 { font-size: 16px; text-align: center; margin-bottom: 5px; }
+            p { margin: 5px 0; }
+            .divider { border-bottom: 1px dashed #000; margin: 10px 0; }
+            table { width: 100%; border-collapse: collapse; }
+            .total { font-weight: bold; font-size: 14px; text-align: right; margin-top: 10px; }
+            .footer { text-align: center; font-size: 10px; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <h1>MON PRESSING</h1>
+          <p style="text-align: center;">Ticket de dépôt</p>
+          <div class="divider"></div>
+          <p><strong>N° Commande:</strong> ${commande.id || 'N/A'}</p>
+          <p><strong>Date:</strong> ${dateStr}</p>
+          <p><strong>Client:</strong> ${commande.nomClient}</p>
+          <p><strong>Tél:</strong> ${commande.telephone || '-'}</p>
+          <div class="divider"></div>
+          <table>
+            ${articlesHtml}
+          </table>
+          <div class="divider"></div>
+          <div class="total">TOTAL: ${commande.montantTotal.toLocaleString('fr-FR')} FCFA</div>
+          <div class="footer">Merci de votre confiance !<br>A présenter lors du retrait.</div>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    // setTimeout pour s'assurer que le contenu est bien chargé
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+  };
+
   const today = new Date().toISOString().split('T')[0];
 
   const commandesFiltrees = commandes.filter(c => {
     // Filtre par statut/date
     let passFilter = true;
-    if (filtre === 'Non lavées') passFilter = c.statutLavage === 'non_lave';
+    if (filtre === 'En boutique') passFilter = c.statutLivraison !== 'livre';
+    else if (filtre === 'Livrées') passFilter = c.statutLivraison === 'livre';
+    else if (filtre === 'Non lavées') passFilter = c.statutLavage === 'non_lave';
     else if (filtre === 'Non payées') passFilter = c.statutPaiement === 'non_paye';
-    else if (filtre === 'À livrer aujourd\'hui') passFilter = c.dateLivraison === today;
 
     // Filtre par recherche (nom ou tel)
     let passSearch = true;
     if (recherche) {
       const searchLower = recherche.toLowerCase();
-      passSearch = (c.nomClient?.toLowerCase().includes(searchLower)) || 
-                   (c.telephone?.includes(recherche));
+      passSearch = (c.nomClient?.toLowerCase().includes(searchLower) ?? false) || 
+                   (c.telephone?.includes(recherche) ?? false);
     }
 
     return passFilter && passSearch;
   });
 
-  const filtresOptions = ['Toutes', 'Non lavées', 'Non payées', 'À livrer aujourd\'hui'];
+  const filtresOptions = ['En boutique', 'Livrées', 'Non lavées', 'Non payées'];
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 mt-2">
@@ -163,6 +238,12 @@ export default function Commandes({ user }) {
                         <Clock size={12} /> Non payé
                       </span>
                     )}
+                    
+                    {commande.statutLivraison === 'livre' && (
+                      <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-md font-bold bg-blue-100 text-blue-700 border border-blue-200 whitespace-nowrap">
+                        <PackageCheck size={12} /> Récupéré
+                      </span>
+                    )}
                   </div>
                 </div>
                 
@@ -206,6 +287,14 @@ export default function Commandes({ user }) {
               {/* Actions */}
               <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-wrap gap-2 justify-end items-center">
                 
+                <button 
+                  onClick={() => handlePrintTicket(commande)}
+                  className="flex justify-center items-center gap-1 text-xs bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 px-3 py-2 rounded-md font-semibold transition-colors shadow-sm mr-auto"
+                  title="Imprimer le ticket"
+                >
+                  <Printer size={14} /> Ticket
+                </button>
+                
                 {commande.statutLavage === 'non_lave' && (
                   <button 
                     onClick={() => handleUpdateLavage(commande.id)}
@@ -220,6 +309,14 @@ export default function Commandes({ user }) {
                     className="flex-1 sm:flex-none flex justify-center items-center gap-1 text-xs bg-white border border-green-200 text-green-700 hover:bg-green-50 px-3 py-2 rounded-md font-semibold transition-colors shadow-sm"
                   >
                     <Banknote size={14} /> Payer
+                  </button>
+                )}
+                {commande.statutLavage === 'lave' && commande.statutPaiement === 'paye' && commande.statutLivraison !== 'livre' && (
+                  <button 
+                    onClick={() => handleUpdateLivraison(commande.id)}
+                    className="flex-1 sm:flex-none flex justify-center items-center gap-1 text-xs bg-white border border-purple-200 text-purple-700 hover:bg-purple-50 px-3 py-2 rounded-md font-semibold transition-colors shadow-sm"
+                  >
+                    <PackageCheck size={14} /> Livrer au client
                   </button>
                 )}
                 

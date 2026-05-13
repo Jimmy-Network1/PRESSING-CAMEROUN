@@ -7,9 +7,10 @@ import Commandes from './pages/Commandes';
 import NouvelleCommande from './pages/NouvelleCommande';
 import Depenses from './pages/Depenses';
 import Login from './pages/Login';
+import { Utilisateur } from './types';
 
 function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<Utilisateur | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,7 +25,7 @@ function App() {
     });
   }, []);
 
-  const handleLogin = (userData) => {
+  const handleLogin = (userData: Utilisateur) => {
     setUser(userData);
     localStorage.setItem('pressing_user', JSON.stringify(userData));
   };

@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getAllCommandes, getAllDepenses } from '../db/indexedDB';
 import { ShoppingCart, Droplets, Banknote, CalendarClock, TrendingUp, ChevronRight, CheckCircle2, Clock, XCircle, TrendingDown, Scale } from 'lucide-react';
+import { Commande, Depense } from '../types';
 
 export default function Dashboard() {
-  const [commandes, setCommandes] = useState([]);
-  const [depenses, setDepenses] = useState([]);
+  const [commandes, setCommandes] = useState<Commande[]>([]);
+  const [depenses, setDepenses] = useState<Depense[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,7 +18,7 @@ export default function Dashboard() {
     const dataCommandes = await getAllCommandes();
     const dataDepenses = await getAllDepenses();
     
-    dataCommandes.sort((a, b) => new Date(b.dateCreation) - new Date(a.dateCreation));
+    dataCommandes.sort((a, b) => new Date(b.dateCreation!).getTime() - new Date(a.dateCreation!).getTime());
     setCommandes(dataCommandes);
     setDepenses(dataDepenses);
     setLoading(false);
@@ -134,19 +135,27 @@ export default function Dashboard() {
               <Scale className="text-slate-600" size={20} />
               <h2 className="text-lg font-bold text-slate-800">Bilan Financier Global</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 rounded-lg border border-slate-100 bg-green-50">
-                <p className="text-xs text-green-700 font-bold uppercase tracking-wider mb-1 flex items-center gap-1"><TrendingUp size={14}/> Total Entrées (CA)</p>
-                <p className="text-xl font-black text-green-800">{caTotal.toLocaleString('fr-FR')} FCFA</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 rounded-lg border border-slate-100 bg-slate-50">
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">CA Encaissé Aujourd'hui</p>
+                <p className="text-lg font-black text-slate-800">{caDuJour.toLocaleString('fr-FR')} FCFA</p>
+              </div>
+              <div className="p-4 rounded-lg border border-slate-100 bg-slate-50">
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">CA Encaissé du Mois</p>
+                <p className="text-lg font-black text-slate-800">{caDuMois.toLocaleString('fr-FR')} FCFA</p>
+              </div>
+              <div className="p-4 rounded-lg border border-slate-100 bg-green-50 lg:col-span-1">
+                <p className="text-[10px] text-green-700 font-bold uppercase tracking-wider mb-1 flex items-center gap-1"><TrendingUp size={14}/> Total Entrées (Encaissé)</p>
+                <p className="text-lg font-black text-green-800">{caTotal.toLocaleString('fr-FR')} FCFA</p>
               </div>
               <div className="p-4 rounded-lg border border-slate-100 bg-red-50">
-                <p className="text-xs text-red-700 font-bold uppercase tracking-wider mb-1 flex items-center gap-1"><TrendingDown size={14}/> Total Charges</p>
-                <p className="text-xl font-black text-red-800">- {totalDepenses.toLocaleString('fr-FR')} FCFA</p>
+                <p className="text-[10px] text-red-700 font-bold uppercase tracking-wider mb-1 flex items-center gap-1"><TrendingDown size={14}/> Total Charges</p>
+                <p className="text-lg font-black text-red-800">- {totalDepenses.toLocaleString('fr-FR')} FCFA</p>
               </div>
-              <div className="p-4 rounded-lg border border-slate-100 bg-blue-50">
-                <p className="text-xs text-blue-700 font-bold uppercase tracking-wider mb-1 flex items-center gap-1"><Scale size={14}/> Bénéfice Net</p>
-                <p className="text-xl font-black text-blue-800">{beneficeNet.toLocaleString('fr-FR')} FCFA</p>
-              </div>
+            </div>
+            <div className="mt-4 p-4 rounded-lg border border-blue-100 bg-blue-50 flex justify-between items-center">
+              <p className="text-sm text-blue-700 font-bold uppercase tracking-wider flex items-center gap-2"><Scale size={18}/> Bénéfice Net (Global)</p>
+              <p className="text-2xl font-black text-blue-800">{beneficeNet.toLocaleString('fr-FR')} FCFA</p>
             </div>
           </div>
 

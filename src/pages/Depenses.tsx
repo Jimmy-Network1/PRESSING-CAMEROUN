@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { getAllDepenses, addDepense, deleteDepense } from '../db/indexedDB';
 import { Wallet, PlusCircle, Trash2, Calendar, FileText } from 'lucide-react';
+import { Depense, Utilisateur } from '../types';
 
-export default function Depenses({ user }) {
-  const [depenses, setDepenses] = useState([]);
+interface DepensesProps {
+  user: Utilisateur;
+}
+
+export default function Depenses({ user }: DepensesProps) {
+  const [depenses, setDepenses] = useState<Depense[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Form state
@@ -18,12 +23,12 @@ export default function Depenses({ user }) {
   const chargerDepenses = async () => {
     setLoading(true);
     const data = await getAllDepenses();
-    data.sort((a, b) => new Date(b.date) - new Date(a.date)); // Trie par date décroissante
+    data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Trie par date décroissante
     setDepenses(data);
     setLoading(false);
   };
 
-  const handleAddDepense = async (e) => {
+  const handleAddDepense = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!motif || !montant) return;
 
@@ -42,7 +47,8 @@ export default function Depenses({ user }) {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: number | undefined) => {
+    if (!id) return;
     if (window.confirm('Supprimer cette dépense ?')) {
       try {
         await deleteDepense(id);
