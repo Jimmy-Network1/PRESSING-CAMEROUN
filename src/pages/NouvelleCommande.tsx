@@ -178,22 +178,11 @@ export default function NouvelleCommande() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Date de dépôt *</label>
-              <input 
-                type="date" 
-                required
-                min={today}
-                value={dateDepot}
-                onChange={(e) => setDateDepot(e.target.value)}
-                className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all"
-              />
-            </div>
-            <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">Date de livraison *</label>
               <input 
-                type="date" 
+                type="datetime-local" 
                 required
-                min={dateDepot || today}
+                min={new Date().toISOString().slice(0, 16)}
                 value={dateLivraison}
                 onChange={(e) => setDateLivraison(e.target.value)}
                 className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all"

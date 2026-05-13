@@ -86,7 +86,7 @@ export default function Commandes({ user }: CommandesProps) {
     const html = `
       <html>
         <head>
-          <title>Ticket de Caisse - Commande #${commande.id}</title>
+          <title>Facture - Commande #${commande.id}</title>
           <style>
             body { font-family: 'Courier New', Courier, monospace; font-size: 12px; padding: 20px; width: 300px; margin: 0 auto; color: #000; }
             h1 { font-size: 16px; text-align: center; margin-bottom: 5px; }
@@ -99,7 +99,7 @@ export default function Commandes({ user }: CommandesProps) {
         </head>
         <body>
           <h1>MON PRESSING</h1>
-          <p style="text-align: center;">Ticket de dépôt</p>
+          <p style="text-align: center;">Facture de Paiement</p>
           <div class="divider"></div>
           <p><strong>N° Commande:</strong> ${commande.id || 'N/A'}</p>
           <p><strong>Date:</strong> ${dateStr}</p>
@@ -110,8 +110,8 @@ export default function Commandes({ user }: CommandesProps) {
             ${articlesHtml}
           </table>
           <div class="divider"></div>
-          <div class="total">TOTAL: ${commande.montantTotal.toLocaleString('fr-FR')} FCFA</div>
-          <div class="footer">Merci de votre confiance !<br>A présenter lors du retrait.</div>
+          <div class="total">TOTAL PAYÉ: ${commande.montantTotal.toLocaleString('fr-FR')} FCFA</div>
+          <div class="footer">Merci de votre confiance !<br>A très bientôt.</div>
         </body>
       </html>
     `;
@@ -287,13 +287,15 @@ export default function Commandes({ user }: CommandesProps) {
               {/* Actions */}
               <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-wrap gap-2 justify-end items-center">
                 
-                <button 
-                  onClick={() => handlePrintTicket(commande)}
-                  className="flex justify-center items-center gap-1 text-xs bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 px-3 py-2 rounded-md font-semibold transition-colors shadow-sm mr-auto"
-                  title="Imprimer le ticket"
-                >
-                  <Printer size={14} /> Ticket
-                </button>
+                {commande.statutPaiement === 'paye' && (
+                  <button 
+                    onClick={() => handlePrintTicket(commande)}
+                    className="flex justify-center items-center gap-1 text-xs bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 px-3 py-2 rounded-md font-semibold transition-colors shadow-sm mr-auto"
+                    title="Imprimer la facture"
+                  >
+                    <Printer size={14} /> Facture
+                  </button>
+                )}
                 
                 {commande.statutLavage === 'non_lave' && (
                   <button 
@@ -320,8 +322,8 @@ export default function Commandes({ user }: CommandesProps) {
                   </button>
                 )}
                 
-                {/* Seul le patron peut supprimer */}
-                {user?.role === 'patron' && (
+                {/* Seul le patron peut supprimer, si non livrée */}
+                {user?.role === 'patron' && commande.statutLivraison !== 'livre' && (
                   <button 
                     onClick={() => handleDelete(commande.id)}
                     className="flex justify-center items-center text-slate-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-md transition-colors border border-transparent hover:border-red-100 ml-auto"

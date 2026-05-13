@@ -58,7 +58,7 @@ export default function Dashboard() {
     d.setDate(d.getDate() - (6 - i));
     const dateStr = d.toISOString().split('T')[0];
     const label = daysLabels[d.getDay()];
-    const count = commandes.filter(c => c.dateDepot === dateStr).length;
+    const count = commandes.filter(c => c.dateDepot?.startsWith(dateStr)).length;
     return { dateStr, label, count };
   });
 
