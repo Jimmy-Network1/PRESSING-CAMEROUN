@@ -126,8 +126,6 @@ export default function Commandes({ user }: CommandesProps) {
     }, 250);
   };
 
-  const today = new Date().toISOString().split('T')[0];
-
   const commandesFiltrees = commandes.filter(c => {
     // Filtre par statut/date
     let passFilter = true;

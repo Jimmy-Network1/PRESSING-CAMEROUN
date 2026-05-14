@@ -25,7 +25,7 @@ export default function NouvelleCommande() {
   const [nomClient, setNomClient] = useState('');
   const [telephone, setTelephone] = useState('');
   const [quartier, setQuartier] = useState(QUARTIERS[0]);
-  const [dateDepot, setDateDepot] = useState(today);
+  const [dateDepot] = useState(today);
   const [dateLivraison, setDateLivraison] = useState('');
   const [modePaiement, setModePaiement] = useState(MODES_PAIEMENT[0]);
   
